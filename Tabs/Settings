@@ -1,0 +1,5 @@
+local Settings = ScriptSection:Tab({
+    Title = "Settings",
+    Icon = "settings",
+    Locked = false,
+})
