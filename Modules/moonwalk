@@ -1,0 +1,221 @@
+local MoonWalk = ScriptSection:Tab({
+    Title = "Moon Walk",
+    Icon = "moon",
+    Locked = false,
+})
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+
+local MoonWalkEnabled = false
+local MoonWalkActive = false
+local MoonWalkKey = Enum.KeyCode.E
+local MoonWalkKeybind = nil
+local MoonWalkSmoothSlider = nil
+
+local MoonWalkBindName = "AtlasProjectMoonWalk"
+local CurrentMoonWalkYaw = nil
+local LastMoveDirection = nil
+
+local MoonWalkTurnSpeed = 220
+
+local function GetCharacterParts()
+    local Character = LocalPlayer.Character
+    if not Character then
+        return nil, nil, nil
+    end
+
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+    return Character, Humanoid, RootPart
+end
+
+local function NormalizeAngle(Angle)
+    return math.atan2(math.sin(Angle), math.cos(Angle))
+end
+
+local function MoveAngleTowards(Current, Target, MaxStep)
+    local Difference = NormalizeAngle(Target - Current)
+
+    if math.abs(Difference) <= MaxStep then
+        return Target
+    end
+
+    return NormalizeAngle(Current + math.sign(Difference) * MaxStep)
+end
+
+local function GetYawFromCFrame(CFrameValue)
+    local _, Yaw, _ = CFrameValue:ToOrientation()
+    return Yaw
+end
+
+local function GetMoonWalkTargetYaw(Position, MoveDirection)
+    local TargetCFrame = CFrame.lookAt(Position, Position - MoveDirection)
+    return GetYawFromCFrame(TargetCFrame)
+end
+
+local function StopMoonWalk()
+    MoonWalkActive = false
+    CurrentMoonWalkYaw = nil
+    LastMoveDirection = nil
+
+    pcall(function()
+        RunService:UnbindFromRenderStep(MoonWalkBindName)
+    end)
+
+    local _, Humanoid = GetCharacterParts()
+    if Humanoid then
+        Humanoid.AutoRotate = true
+    end
+end
+
+local function StartMoonWalk()
+    local _, Humanoid, RootPart = GetCharacterParts()
+    if not Humanoid or not RootPart then
+        return
+    end
+
+    MoonWalkActive = true
+    Humanoid.AutoRotate = false
+    CurrentMoonWalkYaw = GetYawFromCFrame(RootPart.CFrame)
+
+    pcall(function()
+        RunService:UnbindFromRenderStep(MoonWalkBindName)
+    end)
+
+    RunService:BindToRenderStep(MoonWalkBindName, Enum.RenderPriority.Character.Value + 1, function(DeltaTime)
+        if not MoonWalkEnabled or not MoonWalkActive then
+            StopMoonWalk()
+            return
+        end
+
+        local _, CurrentHumanoid, CurrentRootPart = GetCharacterParts()
+        if not CurrentHumanoid or not CurrentRootPart then
+            return
+        end
+
+        CurrentHumanoid.AutoRotate = false
+
+        local MoveDirection = CurrentHumanoid.MoveDirection
+        if MoveDirection.Magnitude > 0.05 then
+            LastMoveDirection = Vector3.new(MoveDirection.X, 0, MoveDirection.Z).Unit
+        end
+
+        if not LastMoveDirection then
+            return
+        end
+
+        local TargetYaw = GetMoonWalkTargetYaw(CurrentRootPart.Position, LastMoveDirection)
+        local MaxStep = math.rad(MoonWalkTurnSpeed) * DeltaTime
+
+        CurrentMoonWalkYaw = MoveAngleTowards(CurrentMoonWalkYaw, TargetYaw, MaxStep)
+
+        CurrentRootPart.CFrame = CFrame.new(CurrentRootPart.Position) * CFrame.Angles(0, CurrentMoonWalkYaw, 0)
+        CurrentRootPart.AssemblyAngularVelocity = Vector3.zero
+    end)
+end
+
+local function ToggleMoonWalkState()
+    if not MoonWalkEnabled then
+        return
+    end
+
+    if MoonWalkActive then
+        StopMoonWalk()
+    else
+        StartMoonWalk()
+    end
+end
+
+local function SetMoonWalkKey(Value)
+    local NewKey = nil
+
+    if typeof(Value) == "EnumItem" then
+        NewKey = Value
+    elseif typeof(Value) == "string" then
+        Value = Value:gsub("Enum.KeyCode.", "")
+        NewKey = Enum.KeyCode[Value]
+    end
+
+    if NewKey then
+        MoonWalkKey = NewKey
+    end
+end
+
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if GameProcessed then
+        return
+    end
+
+    if Input.KeyCode == MoonWalkKey then
+        ToggleMoonWalkState()
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    StopMoonWalk()
+end)
+
+MoonWalk:Toggle({
+    Title = "Enable Moon Walk",
+    Desc = "Enable this to choose a key and use moonwalk.",
+    Icon = "moon",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(State)
+        MoonWalkEnabled = State
+
+        if not State then
+            StopMoonWalk()
+
+            if MoonWalkKeybind then
+                pcall(function()
+                    MoonWalkKeybind:Destroy()
+                end)
+
+                MoonWalkKeybind = nil
+            end
+
+            if MoonWalkSmoothSlider then
+                pcall(function()
+                    MoonWalkSmoothSlider:Destroy()
+                end)
+
+                MoonWalkSmoothSlider = nil
+            end
+
+            return
+        end
+
+        if not MoonWalkKeybind then
+            MoonWalkKeybind = MoonWalk:Keybind({
+                Title = "Moon Walk Key",
+                Desc = "Press this key to toggle moonwalk. Default: E",
+                Value = MoonWalkKey.Name,
+                Callback = function(Value)
+                    SetMoonWalkKey(Value)
+                end
+            })
+        end
+
+        if not MoonWalkSmoothSlider then
+            MoonWalkSmoothSlider = MoonWalk:Slider({
+                Title = "MoonWalk Smooth",
+                Desc = "Lower values make the turn slower and smoother.",
+                Step = 1,
+                Value = {
+                    Min = 80,
+                    Max = 360,
+                    Default = MoonWalkTurnSpeed,
+                },
+                Callback = function(Value)
+                    MoonWalkTurnSpeed = Value
+                end
+            })
+        end
+    end
+})
