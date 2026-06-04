@@ -1,0 +1,99 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "Atlas Project",
+    Icon = "audio-waveform",
+    Author = "By Griim",
+    Folder = "AtlasProject",
+
+    Size = UDim2.fromScale(.5, .4),
+    ToggleKey = Enum.KeyCode.L,
+    Transparent = true,
+    Theme = "Crimson",
+    Resizable = true,
+    SideBarWidth = 200,
+    BackgroundImageTransparency = 0.42,
+    HideSearchBar = false,
+    ScrollBarEnabled = false,
+    User = {
+        Enabled = true,
+        Anonymous = false,
+    },
+    KeySystem = {
+        Key = {
+            "Pjdmg-3",
+            "kP9#mZ2vL&rQ5xN!uW8bT@jY1cA6sH$dF4gJ7hK9zX3cV0bN2mQ5wE8rT1yU4iO7pA0sD3fG6hJ9kL2zX5cV8bN1mQ4wE7rT0yU3iO6"
+        },
+        Note = "Atlas Project was made by Griim.",
+        Thumbnail = {
+            Image = "rbxassetid://133713357393791",
+            Title = " ",
+        },
+        URL = "https://linkvertise.com/5493652/6e18fNeWHXmN?o=sharing",
+        SaveKey = true
+    },
+})
+
+Window:Tag({
+    Title = "v1.0.0",
+    Icon = "scroll",
+    Color = Color3.fromHex("#30ff6a"),
+    Radius = 6,
+})
+
+Window:Tag({
+    Title = "By Griim",
+    Icon = "paw-print",
+    Color = Color3.fromHex("#3033ff"),
+    Radius = 6,
+})
+
+local Main = Window:Tab({
+    Title = "Main",
+    Icon = "house",
+    Locked = false,
+})
+
+Main:Paragraph({
+    Title = "Join the official Atlas Project",
+    Desc = "- Join the Discord server to receive script updates.",
+    Color = "Orange",
+    Image = "party-popper",
+    ImageSize = 30,
+    Buttons = {
+        {
+            Icon = "clipboard-copy",
+            Title = "Copy Discord Link",
+            Callback = function()
+                setclipboard("https://discord.gg/8vvFhJpGa3")
+
+                WindUI:Notify({
+                    Title = "Discord link copied",
+                    Content = "The invite was copied to your clipboard.",
+                    Duration = 3,
+                    Icon = "clipboard-check",
+                })
+            end,
+        }
+    }
+})
+
+Main:Divider()
+
+Main:Paragraph({
+    Title = "Atlas Project Credits",
+    Desc = "Atlas Project was made by Griim.",
+    Color = "Blue",
+    Image = "crown",
+    ImageSize = 30,
+})
+
+local ScriptSection = Window:Section({
+    Title = "Functions",
+    Box = false,
+    FontWeight = "SemiBold",
+    TextTransparency = 0.05,
+    TextXAlignment = "Left",
+    TextSize = 17,
+    Opened = true,
+})
